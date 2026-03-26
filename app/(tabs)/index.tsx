@@ -1,98 +1,181 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router'; // Import the router
+import React from 'react';
+import { SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const router = useRouter(); // Initialize the router
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={{ flex: 1 }}>
+        
+        {/* Logo Section */}
+        <View style={styles.logoSection}>
+          <View style={styles.logoIcon}>
+            <Ionicons name="chatbubble-outline" size={40} color="white" />
+          </View>
+          <ThemedText type="title" style={styles.brandText}>
+            Sumbong <ThemedText style={styles.blueText}>PH</ThemedText>
+          </ThemedText>
+          <ThemedText style={styles.tagline}>
+            Your Voice, Your Community's Future.
+          </ThemedText>
+        </View>
+
+        {/* Features List */}
+        <View style={styles.featuresContainer}>
+          <FeatureItem 
+            icon="chatbubble-ellipses-outline" 
+            iconBg="#E8F0FE" 
+            iconColor="#2F70E9"
+            title="Report Issues" 
+            desc="Floods, garbage, roads & more" 
+          />
+          <FeatureItem 
+            icon="pulse-outline" 
+            iconBg="#E7F9ED" 
+            iconColor="#34C759"
+            title="Track Real-time" 
+            desc="See status updates instantly" 
+          />
+          <FeatureItem 
+            icon="shield-checkmark-outline" 
+            iconBg="#F3E8FF" 
+            iconColor="#9333EA"
+            title="Verified Action" 
+            desc="Direct from barangay officials" 
+          />
+        </View>
+
+        {/* Buttons Section */}
+        <View style={styles.footer}>
+          <TouchableOpacity 
+            style={styles.primaryButton} 
+            activeOpacity={0.8}
+            onPress={() => router.push('/login')} // Navigates to app/login.tsx
+          >
+            <ThemedText style={styles.buttonText}>Get Started</ThemedText>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.secondaryButton}
+            onPress={() => router.push('/login')} // Usually leads to the same sign-in page
+          >
+            <ThemedText style={styles.linkText}>I already have an account</ThemedText>
+          </TouchableOpacity>
+        </View>
+        
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
+
+// Reusable component for the feature rows
+function FeatureItem({ icon, title, desc, iconBg, iconColor }: any) {
+  return (
+    <View style={styles.featureItem}>
+      <View style={[styles.featureIcon, { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={24} color={iconColor} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <ThemedText type="defaultSemiBold" style={styles.featureTitle}>{title}</ThemedText>
+        <ThemedText style={styles.featureDesc}>{desc}</ThemedText>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    paddingHorizontal: 25,
+  },
+  logoSection: {
+    alignItems: 'center',
+    marginTop: 50,
+    marginBottom: 40,
+  },
+  logoIcon: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#2F70E9',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    // Shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    // Shadow for Android
+    elevation: 5,
+  },
+  brandText: {
+    fontSize: 32,
+    fontWeight: '800',
+  },
+  blueText: {
+    color: '#2F70E9',
+  },
+  tagline: {
+    textAlign: 'center',
+    marginTop: 10,
+    opacity: 0.6,
+    fontSize: 16,
+  },
+  featuresContainer: {
+    gap: 15,
+  },
+  featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: 'rgba(150, 150, 150, 0.05)',
+    gap: 15,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  featureIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  featureTitle: {
+    fontSize: 16,
+  },
+  featureDesc: {
+    fontSize: 13,
+    opacity: 0.5,
+  },
+  footer: {
+    marginTop: 'auto',
+    marginBottom: 30,
+    alignItems: 'center',
+    gap: 15,
+  },
+  primaryButton: {
+    backgroundColor: '#2F70E9',
+    width: '100%',
+    padding: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  secondaryButton: {
+    padding: 10,
+  },
+  linkText: {
+    opacity: 0.6,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
