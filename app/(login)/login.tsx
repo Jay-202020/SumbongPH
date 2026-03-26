@@ -1,7 +1,9 @@
+import { auth } from '@/firebaseConfig';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -18,21 +20,27 @@ export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const DEMO_EMAIL = "admin@example.com";
-  const DEMO_PASS = "123456";
+  const handleLogin = async () => {
+    if (!email.trim() || !password) {
+      Alert.alert('Login Failed', 'Please enter your email and password.');
+      return;
+    }
 
-  const handleLogin = () => {
-    if (email.toLowerCase() === DEMO_EMAIL && password === DEMO_PASS) {
-      router.replace('/home.dashboard');
-    } else {
-      Alert.alert("Login Failed", "Please use the demo account.");
+    try {
+      setLoading(true);
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+      router.replace('/(home_dasborad)/home.dashboard');
+    } catch (error) {
+      Alert.alert('Login Failed', 'Please check your email and password.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <ThemedView style={styles.container}>
-      {/* THIS LINE REMOVES THE (login)/login TEXT */}
       <Stack.Screen options={{ headerShown: false }} />
 
       <KeyboardAvoidingView
@@ -58,6 +66,9 @@ export default function LoginScreen() {
                 placeholderTextColor="#9CA3AF"
                 value={email}
                 onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!loading}
               />
             </View>
 
@@ -70,14 +81,15 @@ export default function LoginScreen() {
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
+                editable={!loading}
               />
               <TouchableOpacity style={styles.forgotPassword}>
                 <ThemedText style={styles.blueLinkText}>Forgot Password?</ThemedText>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.signInButton} onPress={handleLogin}>
-              <ThemedText style={styles.buttonText}>Sign In</ThemedText>
+            <TouchableOpacity style={styles.signInButton} onPress={handleLogin} disabled={loading}>
+              <ThemedText style={styles.buttonText}>{loading ? 'Signing In...' : 'Sign In'}</ThemedText>
             </TouchableOpacity>
           </View>
 

@@ -70,11 +70,11 @@ export default function ReportsDashboard() {
 
         {/* Navigation Bar */}
 <View style={styles.tabBar}>
-  <TabIcon icon="home-outline" label="Home" onPress={() => router.push('/home.dashboard')} />
-  <TabIcon icon="document-text" label="Reports" active onPress={() => router.push('/reports.dashboard')} />
-  <TabIcon icon="map-outline" label="Map" onPress={() => router.push('/maps.dashboard')} />
-  <TabIcon icon="bulb-outline" label="Ideas" />
-  <TabIcon icon="person-outline" label="Profile" />
+  <TabIcon icon="home-outline" label="Home" onPress={() => router.push('/(home_dasborad)/home.dashboard')} />
+  <TabIcon icon="document-text" label="Reports" active onPress={() => router.push('/(reports_dashboard)/reports.dashboard')} />
+  <TabIcon icon="map-outline" label="Maps" onPress={() => router.push('/(maps.dashboard)/maps.dashboard')} />
+  <TabIcon icon="bulb-outline" label="Ideas" onPress={() => router.push('/(ideas_dashboard)/ideas_dashboard')} />
+  <TabIcon icon="person-outline" label="Profile" onPress={() => router.push('/profile')} />
 </View>
       </SafeAreaView>
     </ThemedView>

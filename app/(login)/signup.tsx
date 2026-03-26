@@ -1,28 +1,59 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { auth } from '@/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router'; // Added Stack here
+import { Stack, useRouter } from 'expo-router';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import React, { useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function SignUpScreen() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [barangay, setBarangay] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSignUp = () => {
-    Alert.alert("Success", `Welcome, ${fullName}! Your account has been created.`);
-    router.replace('/login');
+  const handleSignUp = async () => {
+    if (!fullName.trim() || !mobileNumber.trim() || !email.trim() || !barangay.trim() || !password || !confirmPassword) {
+      Alert.alert('Sign Up Failed', 'Please complete all required fields.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Sign Up Failed', 'Passwords do not match.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await createUserWithEmailAndPassword(auth, email.trim(), password);
+
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, {
+          displayName: fullName.trim(),
+        });
+      }
+
+      Alert.alert('Success', `Welcome, ${fullName.trim()}! Your account has been created.`);
+      router.replace('/login');
+    } catch (error: any) {
+      Alert.alert('Sign Up Failed', error.message || 'Unable to create your account.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <ThemedView style={styles.container}>
-      {/* 1. This hides the "(signup)/signup" header text */}
       <Stack.Screen options={{ headerShown: false }} />
 
       <SafeAreaView style={{ flex: 1 }}>
-        {/* 2. Back Button Styled and Functional */}
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
@@ -37,79 +68,97 @@ export default function SignUpScreen() {
 
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-                <ThemedText style={styles.label}>Full Name</ThemedText>
-                <TextInput 
-                  style={styles.input} 
-                  placeholder="Juan Dela Cruz"
-                  placeholderTextColor="#9CA3AF"
-                  value={fullName}
-                  onChangeText={setFullName}
-                />
+              <ThemedText style={styles.label}>Full Name</ThemedText>
+              <TextInput
+                style={styles.input}
+                placeholder="Juan Dela Cruz"
+                placeholderTextColor="#9CA3AF"
+                value={fullName}
+                onChangeText={setFullName}
+                editable={!loading}
+              />
             </View>
 
             <View style={styles.inputGroup}>
-                <ThemedText style={styles.label}>Mobile Number</ThemedText>
-                <TextInput 
-                  style={styles.input} 
-                  placeholder="0912 345 6789"
-                  placeholderTextColor="#9CA3AF"
-                  keyboardType="phone-pad"
-                />
+              <ThemedText style={styles.label}>Mobile Number</ThemedText>
+              <TextInput
+                style={styles.input}
+                placeholder="0912 345 6789"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="phone-pad"
+                value={mobileNumber}
+                onChangeText={setMobileNumber}
+                editable={!loading}
+              />
             </View>
 
             <View style={styles.inputGroup}>
-                <ThemedText style={styles.label}>Email Address (Optional)</ThemedText>
-                <TextInput 
-                  style={styles.input} 
-                  placeholder="name@example.com"
-                  placeholderTextColor="#9CA3AF"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
+              <ThemedText style={styles.label}>Email Address (Optional)</ThemedText>
+              <TextInput
+                style={styles.input}
+                placeholder="name@example.com"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+                editable={!loading}
+              />
             </View>
 
             <View style={styles.inputGroup}>
               <ThemedText style={styles.label}>Barangay</ThemedText>
-              <TouchableOpacity style={styles.pickerContainer}>
-                <ThemedText style={{ color: '#111827' }}>Select an option</ThemedText>
-                <Ionicons name="chevron-down" size={18} color="#6B7280" />
-              </TouchableOpacity>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your barangay"
+                placeholderTextColor="#9CA3AF"
+                value={barangay}
+                onChangeText={setBarangay}
+                editable={!loading}
+              />
             </View>
 
             <View style={styles.inputGroup}>
               <ThemedText style={styles.label}>Password</ThemedText>
-              <TextInput 
-                style={styles.input} 
-                secureTextEntry 
+              <TextInput
+                style={styles.input}
+                secureTextEntry
                 placeholder="••••••••"
                 placeholderTextColor="#9CA3AF"
+                value={password}
+                onChangeText={setPassword}
+                editable={!loading}
               />
             </View>
 
             <View style={styles.inputGroup}>
               <ThemedText style={styles.label}>Confirm Password</ThemedText>
-              <TextInput 
-                style={styles.input} 
-                secureTextEntry 
+              <TextInput
+                style={styles.input}
+                secureTextEntry
                 placeholder="••••••••"
                 placeholderTextColor="#9CA3AF"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                editable={!loading}
               />
             </View>
 
-            <TouchableOpacity 
-              style={styles.primaryButton} 
+            <TouchableOpacity
+              style={styles.primaryButton}
               onPress={handleSignUp}
               activeOpacity={0.8}
+              disabled={loading}
             >
-              <ThemedText style={styles.buttonText}>Create Account</ThemedText>
+              <ThemedText style={styles.buttonText}>{loading ? 'Creating Account...' : 'Create Account'}</ThemedText>
             </TouchableOpacity>
           </View>
 
           <View style={styles.footer}>
             <ThemedText style={styles.footerText}>
               Already have an account?{' '}
-              <ThemedText 
-                style={styles.linkText} 
+              <ThemedText
+                style={styles.linkText}
                 onPress={() => router.push('/login')}
               >
                 Sign In
@@ -124,10 +173,10 @@ export default function SignUpScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 25 },
-  backButton: { 
-    width: 40, 
-    height: 40, 
-    justifyContent: 'center', 
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
     alignItems: 'flex-start',
     marginTop: 10,
   },
@@ -137,24 +186,24 @@ const styles = StyleSheet.create({
   form: { gap: 18 },
   inputGroup: { gap: 8 },
   label: { fontSize: 14, fontWeight: '600', color: '#374151' },
-  input: { 
-    borderWidth: 1, 
-    borderColor: '#E5E7EB', 
-    borderRadius: 12, // Consistent with login
-    padding: 15, 
-    fontSize: 16, 
+  input: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 15,
+    fontSize: 16,
     backgroundColor: '#FFFFFF',
     color: '#111827'
   },
-  pickerContainer: { 
-    borderWidth: 1, 
-    borderColor: '#E5E7EB', 
-    borderRadius: 12, 
-    padding: 15, 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    backgroundColor: '#FFFFFF' 
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF'
   },
   primaryButton: { 
     backgroundColor: '#2F70E9', 

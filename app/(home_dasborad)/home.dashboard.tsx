@@ -69,7 +69,7 @@ export default function Dashboard() {
           {/* Recent Reports Section */}
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Recent Reports</ThemedText>
-            <TouchableOpacity onPress={() => router.push('/reports.dashboard')}>
+            <TouchableOpacity onPress={() => router.push('/(reports_dashboard)/reports.dashboard')}>
               <ThemedText style={styles.viewAll}>View All</ThemedText>
             </TouchableOpacity>
           </View>
@@ -93,11 +93,11 @@ export default function Dashboard() {
 
         {/* Bottom Tab Bar */}
 <View style={styles.tabBar}>
-  <TabIcon icon="home" label="Home" active onPress={() => router.push('/home.dashboard')} />
-  <TabIcon icon="document-text-outline" label="Reports" onPress={() => router.push('/reports.dashboard')} />
-  <TabIcon icon="map-outline" label="Map" onPress={() => router.push('/maps.dashboard')} />
-  <TabIcon icon="bulb-outline" label="Ideas" />
-  <TabIcon icon="person-outline" label="Profile" />
+  <TabIcon icon="home" label="Home" active onPress={() => router.push('/(home_dasborad)/home.dashboard')} />
+  <TabIcon icon="document-text-outline" label="Reports" onPress={() => router.push('/(reports_dashboard)/reports.dashboard')} />
+  <TabIcon icon="map-outline" label="Maps" onPress={() => router.push('/(maps.dashboard)/maps.dashboard')} />
+  <TabIcon icon="bulb-outline" label="Ideas" onPress={() => router.push('/(ideas_dashboard)/ideas_dashboard')} />
+  <TabIcon icon="person-outline" label="Profile" onPress={() => router.push('/profile')} />
 </View>
       </SafeAreaView>
     </ThemedView>
