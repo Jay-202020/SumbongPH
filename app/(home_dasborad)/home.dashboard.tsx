@@ -87,18 +87,23 @@ export default function Dashboard() {
 
         </ScrollView>
         
-        <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+        {/* PLUS BUTTON (FAB) - CONNECTED TO CATEGORY */}
+        <TouchableOpacity 
+          style={styles.fab} 
+          activeOpacity={0.8}
+          onPress={() => router.push('/category.dashboard')}
+        >
           <Ionicons name="add" size={32} color="white" />
         </TouchableOpacity>
 
         {/* Bottom Tab Bar */}
-<View style={styles.tabBar}>
-  <TabIcon icon="home" label="Home" active onPress={() => router.push('/(home_dasborad)/home.dashboard')} />
-  <TabIcon icon="document-text-outline" label="Reports" onPress={() => router.push('/(reports_dashboard)/reports.dashboard')} />
-  <TabIcon icon="map-outline" label="Maps" onPress={() => router.push('/(maps.dashboard)/maps.dashboard')} />
-  <TabIcon icon="bulb-outline" label="Ideas" onPress={() => router.push('/(ideas_dashboard)/ideas_dashboard')} />
-  <TabIcon icon="person-outline" label="Profile" onPress={() => router.push('/profile')} />
-</View>
+        <View style={styles.tabBar}>
+          <TabIcon icon="home" label="Home" active onPress={() => router.push('/home.dashboard')} />
+          <TabIcon icon="document-text-outline" label="Reports" onPress={() => router.push('/reports.dashboard')} />
+          <TabIcon icon="map-outline" label="Maps" onPress={() => router.push('/maps.dashboard')} />
+          <TabIcon icon="bulb-outline" label="Ideas" onPress={() => router.push('/ideas_dashboard')} />
+          <TabIcon icon="person-outline" label="Profile" onPress={() => router.push('/profile')} />
+        </View>
       </SafeAreaView>
     </ThemedView>
   );

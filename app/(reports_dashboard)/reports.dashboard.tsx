@@ -16,7 +16,6 @@ export default function ReportsDashboard() {
         <View style={styles.content}>
           <ThemedText style={styles.pageTitle}>My Reports</ThemedText>
 
-          {/* Search and Filter Row */}
           <View style={styles.searchRow}>
             <View style={styles.searchBar}>
               <Ionicons name="search-outline" size={20} color="#9CA3AF" />
@@ -64,22 +63,28 @@ export default function ReportsDashboard() {
           </ScrollView>
         </View>
 
-        <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+        {/* Updated FAB with Navigation */}
+        <TouchableOpacity 
+          style={styles.fab} 
+          activeOpacity={0.8}
+          onPress={() => router.push('/category.dashboard')}
+        >
           <Ionicons name="add" size={32} color="white" />
         </TouchableOpacity>
 
-        {/* Navigation Bar */}
-<View style={styles.tabBar}>
-  <TabIcon icon="home-outline" label="Home" onPress={() => router.push('/(home_dasborad)/home.dashboard')} />
-  <TabIcon icon="document-text" label="Reports" active onPress={() => router.push('/(reports_dashboard)/reports.dashboard')} />
-  <TabIcon icon="map-outline" label="Maps" onPress={() => router.push('/(maps.dashboard)/maps.dashboard')} />
-  <TabIcon icon="bulb-outline" label="Ideas" onPress={() => router.push('/(ideas_dashboard)/ideas_dashboard')} />
-  <TabIcon icon="person-outline" label="Profile" onPress={() => router.push('/profile')} />
-</View>
+        <View style={styles.tabBar}>
+          <TabIcon icon="home-outline" label="Home" onPress={() => router.push('/(home_dasborad)/home.dashboard')} />
+          <TabIcon icon="document-text" label="Reports" active onPress={() => router.push('/(reports_dashboard)/reports.dashboard')} />
+          <TabIcon icon="map-outline" label="Maps" onPress={() => router.push('/(maps.dashboard)/maps.dashboard')} />
+          <TabIcon icon="bulb-outline" label="Ideas" onPress={() => router.push('/(ideas_dashboard)/ideas_dashboard')} />
+          <TabIcon icon="person-outline" label="Profile" onPress={() => router.push('/profile')} />
+        </View>
       </SafeAreaView>
     </ThemedView>
   );
 }
+
+// ... ReportCard and TabIcon components remain the same as your original file
 
 function ReportCard({ title, status, id, desc, location, date, icon, statusBlue, statusGreen }: any) {
   return (

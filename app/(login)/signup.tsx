@@ -1,11 +1,10 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { auth } from '@/firebaseConfig';
+
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import React, { useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -18,6 +17,7 @@ export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = async () => {
+    // Basic Validation
     if (!fullName.trim() || !mobileNumber.trim() || !email.trim() || !barangay.trim() || !password || !confirmPassword) {
       Alert.alert('Sign Up Failed', 'Please complete all required fields.');
       return;
@@ -30,16 +30,10 @@ export default function SignUpScreen() {
 
     try {
       setLoading(true);
-      await createUserWithEmailAndPassword(auth, email.trim(), password);
+      // Create User in Firebase
 
-      if (auth.currentUser) {
-        await updateProfile(auth.currentUser, {
-          displayName: fullName.trim(),
-        });
-      }
-
-      Alert.alert('Success', `Welcome, ${fullName.trim()}! Your account has been created.`);
-      router.replace('/login');
+      Alert.alert('Success', `Welcome, ${fullName.trim()}!`);
+      // NOTE: router.replace is handled by _layout.tsx once auth state changes
     } catch (error: any) {
       Alert.alert('Sign Up Failed', error.message || 'Unable to create your account.');
     } finally {
@@ -93,7 +87,7 @@ export default function SignUpScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Email Address (Optional)</ThemedText>
+              <ThemedText style={styles.label}>Email Address</ThemedText>
               <TextInput
                 style={styles.input}
                 placeholder="name@example.com"
@@ -145,12 +139,16 @@ export default function SignUpScreen() {
             </View>
 
             <TouchableOpacity
-              style={styles.primaryButton}
+              style={[styles.primaryButton, loading && { opacity: 0.7 }]}
               onPress={handleSignUp}
               activeOpacity={0.8}
               disabled={loading}
             >
-              <ThemedText style={styles.buttonText}>{loading ? 'Creating Account...' : 'Create Account'}</ThemedText>
+              {loading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <ThemedText style={styles.buttonText}>Create Account</ThemedText>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -194,16 +192,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#FFFFFF',
     color: '#111827'
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 15,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF'
   },
   primaryButton: { 
     backgroundColor: '#2F70E9', 

@@ -16,13 +16,16 @@ export default function IdeasDashboard() {
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
           <ThemedText style={styles.headerTitle}>Community Suggestions</ThemedText>
-          <TouchableOpacity style={styles.newButton}>
+          {/* New Button also pointing to Category Selection */}
+          <TouchableOpacity 
+            style={styles.newButton} 
+            onPress={() => router.push('/category.dashboard')}
+          >
             <Ionicons name="add" size={20} color="white" />
             <ThemedText style={styles.newButtonText}>New</ThemedText>
           </TouchableOpacity>
         </View>
 
-        {/* Filter Toggle */}
         <View style={styles.filterContainer}>
           <TouchableOpacity 
             style={[styles.filterTab, filter === 'Popular' && styles.activeFilterTab]} 
@@ -39,48 +42,19 @@ export default function IdeasDashboard() {
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          <IdeaCard 
-            author="Maria Santos"
-            time="2 days ago"
-            title="Install solar streetlights in Purok 3"
-            desc="The alleyways are very dark at night. Solar lights would be cost-effective and improve safety."
-            likes={45}
-            comments={12}
-            status="Under Review"
-            statusColor="#FEF9C3"
-            textColor="#854D0E"
-          />
-
-          <IdeaCard 
-            author="Juan Dela Cruz"
-            time="5 days ago"
-            title="Weekly community cleanup drive"
-            desc="Let's organize a Saturday morning cleanup to keep our drainage systems clear before the rainy season."
-            likes={32}
-            comments={8}
-            status="Approved"
-            statusColor="#DCFCE7"
-            textColor="#166534"
-          />
-
-          <IdeaCard 
-            author="Pedro Penduko"
-            time="1 week ago"
-            title="More trash bins near the basketball court"
-            desc="People leave bottles and wrappers after games because there are no bins nearby."
-            likes={28}
-            comments={5}
-            status="Submitted"
-            statusColor="#F3F4F6"
-            textColor="#4B5563"
-          />
+          <IdeaCard author="Maria Santos" time="2 days ago" title="Install solar streetlights in Purok 3" desc="The alleyways are very dark at night." likes={45} comments={12} status="Under Review" statusColor="#FEF9C3" textColor="#854D0E" />
+          <IdeaCard author="Juan Dela Cruz" time="5 days ago" title="Weekly community cleanup drive" desc="Let's organize a Saturday morning cleanup." likes={32} comments={8} status="Approved" statusColor="#DCFCE7" textColor="#166534" />
         </ScrollView>
 
-        <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+        {/* FAB Navigating to Category Dashboard */}
+        <TouchableOpacity 
+          style={styles.fab} 
+          activeOpacity={0.8}
+          onPress={() => router.push('/category.dashboard')}
+        >
           <Ionicons name="add" size={32} color="white" />
         </TouchableOpacity>
 
-        {/* Navigation Bar */}
         <View style={styles.tabBar}>
           <TabIcon icon="home-outline" label="Home" onPress={() => router.push('/(home_dasborad)/home.dashboard')} />
           <TabIcon icon="document-text-outline" label="Reports" onPress={() => router.push('/(reports_dashboard)/reports.dashboard')} />
@@ -99,29 +73,18 @@ function IdeaCard({ author, time, title, desc, likes, comments, status, statusCo
       <View style={styles.cardHeader}>
         <View style={styles.userInfo}>
           <View style={styles.avatarPlaceholder}><ThemedText style={styles.avatarText}>{author.charAt(0)}</ThemedText></View>
-          <View>
-            <ThemedText style={styles.userName}>{author}</ThemedText>
-            <ThemedText style={styles.timeText}>{time}</ThemedText>
-          </View>
+          <View><ThemedText style={styles.userName}>{author}</ThemedText><ThemedText style={styles.timeText}>{time}</ThemedText></View>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
           <ThemedText style={[styles.statusText, { color: textColor }]}>{status}</ThemedText>
         </View>
       </View>
-
       <ThemedText style={styles.ideaTitle}>{title}</ThemedText>
       <ThemedText style={styles.ideaDesc}>{desc}</ThemedText>
-
       <View style={styles.cardFooter}>
         <View style={styles.stats}>
-          <View style={styles.statItem}>
-            <Ionicons name="thumbs-up-outline" size={20} color="#6B7280" />
-            <ThemedText style={styles.statText}>{likes}</ThemedText>
-          </View>
-          <View style={styles.statItem}>
-            <Ionicons name="chatbubble-outline" size={20} color="#6B7280" />
-            <ThemedText style={styles.statText}>{comments}</ThemedText>
-          </View>
+          <View style={styles.statItem}><Ionicons name="thumbs-up-outline" size={20} color="#6B7280" /><ThemedText style={styles.statText}>{likes}</ThemedText></View>
+          <View style={styles.statItem}><Ionicons name="chatbubble-outline" size={20} color="#6B7280" /><ThemedText style={styles.statText}>{comments}</ThemedText></View>
         </View>
         <TouchableOpacity><ThemedText style={styles.readMore}>Read more</ThemedText></TouchableOpacity>
       </View>
