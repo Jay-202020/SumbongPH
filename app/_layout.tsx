@@ -8,9 +8,8 @@ function RootLayoutContent() {
 
   return (
     <NavigationProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
-      <Stack initialRouteName="splash">
-        {/* Splash at Login Screens */}
-        <Stack.Screen name="splash" options={{ headerShown: false }} />
+      <Stack initialRouteName="index">
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(login)" options={{ headerShown: false }} />
 
         {/* Dashboards - Siniguradong lahat ay naka-headerShown: false para malinis */}
