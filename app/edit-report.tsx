@@ -1,6 +1,11 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { REPORT_CATEGORIES, REPORT_URGENCY_LEVELS, ReportCategory, ReportUrgency } from '@/models/report';
+import {
+  REPORT_CATEGORIES,
+  REPORT_URGENCY_LEVELS,
+  ReportCategory,
+  ReportUrgency,
+} from '@/models/report';
 import { submitReport } from '@/services/reportService';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -15,11 +20,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import ReportLocationPicker from '../components/ReportLocationPicker';
 import { useTheme } from './ThemeContext';
 
 const CATEGORY_META: Record<
   ReportCategory,
-  { icon: any; bg: string; color: string }
+  { icon: keyof typeof Ionicons.glyphMap; bg: string; color: string }
 > = {
   Flood: { icon: 'cloud-outline', bg: '#EEF2FF', color: '#4F46E5' },
   Garbage: { icon: 'trash-outline', bg: '#F0FDF4', color: '#16A34A' },
@@ -48,7 +54,19 @@ export default function EditReportScreen() {
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const [selectedLocation, setSelectedLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
   const categoryMeta = CATEGORY_META[category];
+
+  const handleLocationChange = (coords: {
+    latitude: number;
+    longitude: number;
+  }) => {
+    setSelectedLocation(coords);
+  };
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -57,7 +75,12 @@ export default function EditReportScreen() {
     }
 
     if (!location.trim()) {
-      Alert.alert('Missing Location', 'Please enter the location of the issue.');
+      Alert.alert('Missing Location', 'Please enter the street or place name.');
+      return;
+    }
+
+    if (!selectedLocation) {
+      Alert.alert('Missing Pin Location', 'Please pin the exact issue location on the map.');
       return;
     }
 
@@ -75,6 +98,8 @@ export default function EditReportScreen() {
         location,
         urgency,
         description,
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
       });
 
       Alert.alert(
@@ -157,18 +182,41 @@ export default function EditReportScreen() {
             />
 
             <ThemedText style={[styles.label, isDarkMode && styles.darkSubText]}>
-              Location
+              Street / Place Name
             </ThemedText>
             <View style={[styles.inputRow, isDarkMode && styles.darkInput]}>
               <Ionicons name="location-outline" size={20} color="#9CA3AF" />
               <TextInput
                 style={[styles.flexInput, isDarkMode && styles.darkText]}
-                placeholder="Enter the exact location"
+                placeholder="Example: Purok 3, near chapel"
                 placeholderTextColor="#9CA3AF"
                 value={location}
                 onChangeText={setLocation}
               />
             </View>
+
+            <ThemedText style={[styles.label, isDarkMode && styles.darkSubText]}>
+              Pin Exact Location
+            </ThemedText>
+
+            <ReportLocationPicker
+              isDarkMode={isDarkMode}
+              selectedLocation={selectedLocation}
+              onLocationChange={handleLocationChange}
+              title={title}
+              location={location}
+            />
+
+            {selectedLocation && (
+              <View style={[styles.coordinatesBox, isDarkMode && styles.darkInput]}>
+                <ThemedText style={[styles.coordinatesText, isDarkMode && styles.darkText]}>
+                  Latitude: {selectedLocation.latitude.toFixed(6)}
+                </ThemedText>
+                <ThemedText style={[styles.coordinatesText, isDarkMode && styles.darkText]}>
+                  Longitude: {selectedLocation.longitude.toFixed(6)}
+                </ThemedText>
+              </View>
+            )}
 
             <ThemedText style={[styles.label, isDarkMode && styles.darkSubText]}>
               Urgency Level
@@ -206,7 +254,11 @@ export default function EditReportScreen() {
               Description
             </ThemedText>
             <TextInput
-              style={[styles.textArea, isDarkMode && styles.darkInput, isDarkMode && styles.darkText]}
+              style={[
+                styles.textArea,
+                isDarkMode && styles.darkInput,
+                isDarkMode && styles.darkText,
+              ]}
               placeholder="Describe the issue clearly so the admin can review it."
               placeholderTextColor="#9CA3AF"
               value={description}
@@ -330,6 +382,17 @@ const styles = StyleSheet.create({
     color: '#111827',
     paddingVertical: 12,
     marginLeft: 10,
+  },
+  coordinatesBox: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 8,
+  },
+  coordinatesText: {
+    fontSize: 14,
+    lineHeight: 22,
   },
   urgencyRow: {
     flexDirection: 'row',

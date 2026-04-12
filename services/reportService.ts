@@ -1,17 +1,17 @@
 import { auth, db } from '@/firebaseConfig';
 import {
-    NewReportInput,
-    ReportItem,
-    ReportStatus,
+  NewReportInput,
+  ReportItem,
+  ReportStatus,
 } from '@/models/report';
 import {
-    addDoc,
-    collection,
-    getDocs,
-    onSnapshot,
-    query,
-    serverTimestamp,
-    where,
+  addDoc,
+  collection,
+  getDocs,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  where,
 } from 'firebase/firestore';
 
 type UserProfile = {
@@ -100,6 +100,8 @@ const mapReportDoc = (doc: any): ReportItem => {
     title: data.title || '',
     description: data.description || '',
     location: data.location || '',
+    latitude: typeof data.latitude === 'number' ? data.latitude : null,
+    longitude: typeof data.longitude === 'number' ? data.longitude : null,
     urgency: data.urgency || 'Low',
     status: normalizeStatus(data.status),
     barangay: data.barangay || '',
@@ -130,6 +132,8 @@ export const submitReport = async (
     title: input.title.trim(),
     description: input.description.trim(),
     location: input.location.trim(),
+    latitude: input.latitude,
+    longitude: input.longitude,
     urgency: input.urgency,
     status: 'Pending',
     userId: profile.uid,

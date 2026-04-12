@@ -21,6 +21,8 @@ export type ReportItem = {
   title: string;
   description: string;
   location: string;
+  latitude: number | null;
+  longitude: number | null;
   urgency: ReportUrgency;
   status: ReportStatus;
   barangay: string;
@@ -37,5 +39,7 @@ export type NewReportInput = {
   title: string;
   description: string;
   location: string;
+  latitude: number;
+  longitude: number;
   urgency: ReportUrgency;
 };

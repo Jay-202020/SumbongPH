@@ -1,16 +1,28 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { db } from '@/firebaseConfig';
 import { SuggestionItem } from '@/models/suggestion';
 import { fetchSuggestions } from '@/services/suggestionService';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import {
+  addDoc,
+  collection,
+  doc,
+  increment,
+  serverTimestamp,
+  updateDoc,
+} from 'firebase/firestore';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Modal,
   RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -19,10 +31,18 @@ import { useTheme } from '../ThemeContext';
 export default function IdeasDashboard() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
+
   const [filter, setFilter] = useState<'Popular' | 'Newest'>('Popular');
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [likingId, setLikingId] = useState<string | null>(null);
+  const [commentingId, setCommentingId] = useState<string | null>(null);
+
+  const [commentModalVisible, setCommentModalVisible] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<SuggestionItem | null>(null);
+  const [commentText, setCommentText] = useState('');
 
   const loadSuggestions = async (showRefreshing = false) => {
     try {
@@ -56,8 +76,8 @@ export default function IdeasDashboard() {
     }
 
     return data.sort((a, b) => {
-      const aSeconds = a.createdAt?.seconds ?? 0;
-      const bSeconds = b.createdAt?.seconds ?? 0;
+      const aSeconds = (a as any).createdAt?.seconds ?? 0;
+      const bSeconds = (b as any).createdAt?.seconds ?? 0;
       return bSeconds - aSeconds;
     });
   }, [suggestions, filter]);
@@ -108,6 +128,89 @@ export default function IdeasDashboard() {
       return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
     } catch {
       return 'Just now';
+    }
+  };
+
+  const handleLike = async (item: SuggestionItem) => {
+    try {
+      if (!item.id) return;
+
+      setLikingId(item.id);
+
+      const suggestionRef = doc(db, 'suggestions', item.id);
+
+      await updateDoc(suggestionRef, {
+        likes: increment(1),
+      });
+
+      setSuggestions((prev) =>
+        prev.map((suggestion) =>
+          suggestion.id === item.id
+            ? { ...suggestion, likes: (suggestion.likes ?? 0) + 1 }
+            : suggestion
+        )
+      );
+    } catch (error) {
+      console.log('LIKE ERROR:', error);
+      Alert.alert('Error', 'Could not like this suggestion.');
+    } finally {
+      setLikingId(null);
+    }
+  };
+
+  const openCommentModal = (item: SuggestionItem) => {
+    setSelectedSuggestion(item);
+    setCommentText('');
+    setCommentModalVisible(true);
+  };
+
+  const closeCommentModal = () => {
+    setCommentModalVisible(false);
+    setSelectedSuggestion(null);
+    setCommentText('');
+  };
+
+  const handleSubmitComment = async () => {
+    try {
+      if (!selectedSuggestion?.id) return;
+
+      const trimmedComment = commentText.trim();
+
+      if (!trimmedComment) {
+        Alert.alert('Missing comment', 'Please type a comment first.');
+        return;
+      }
+
+      setCommentingId(selectedSuggestion.id);
+
+      const suggestionRef = doc(db, 'suggestions', selectedSuggestion.id);
+      const commentsRef = collection(db, 'suggestions', selectedSuggestion.id, 'comments');
+
+      await addDoc(commentsRef, {
+        text: trimmedComment,
+        createdAt: serverTimestamp(),
+        userName: 'Anonymous User',
+      });
+
+      await updateDoc(suggestionRef, {
+        comments: increment(1),
+      });
+
+      setSuggestions((prev) =>
+        prev.map((suggestion) =>
+          suggestion.id === selectedSuggestion.id
+            ? { ...suggestion, comments: (suggestion.comments ?? 0) + 1 }
+            : suggestion
+        )
+      );
+
+      closeCommentModal();
+      Alert.alert('Success', 'Comment added successfully.');
+    } catch (error) {
+      console.log('COMMENT ERROR:', error);
+      Alert.alert('Error', 'Could not submit your comment.');
+    } finally {
+      setCommentingId(null);
     }
   };
 
@@ -197,15 +300,19 @@ export default function IdeasDashboard() {
             filteredSuggestions.map((item) => (
               <IdeaCard
                 key={item.id}
-                author={item.userName}
-                time={formatTimeAgo(item.createdAt)}
-                title={item.title}
-                desc={item.description}
-                likes={item.likes}
-                comments={item.comments}
-                status={item.status}
-                category={item.category}
-                statusStyle={getStatusStyle(item.status)}
+                author={(item as any).userName}
+                time={formatTimeAgo((item as any).createdAt)}
+                title={(item as any).title}
+                desc={(item as any).description}
+                likes={(item as any).likes ?? 0}
+                comments={(item as any).comments ?? 0}
+                status={(item as any).status}
+                category={(item as any).category}
+                statusStyle={getStatusStyle((item as any).status)}
+                onLike={() => handleLike(item)}
+                onComment={() => openCommentModal(item)}
+                likeLoading={likingId === item.id}
+                commentLoading={commentingId === item.id}
               />
             ))
           )}
@@ -226,11 +333,10 @@ export default function IdeasDashboard() {
             onPress={() => router.push('/(home_dasborad)/home.dashboard')}
           />
           <TabIcon
-  icon="map-outline"
-  label="Maps"
-  onPress={() => router.push('/(maps.dashboard)/maps.dashboard')}
-/>
-          
+            icon="map-outline"
+            label="Maps"
+            onPress={() => router.push('/(maps.dashboard)/maps.dashboard')}
+          />
           <TabIcon
             icon="bulb"
             label="Ideas"
@@ -243,6 +349,65 @@ export default function IdeasDashboard() {
             onPress={() => router.push('/profile')}
           />
         </View>
+
+        <Modal
+          visible={commentModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={closeCommentModal}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalCard, isDarkMode && styles.darkCard]}>
+              <ThemedText style={[styles.modalTitle, isDarkMode && styles.darkText]}>
+                Add Comment
+              </ThemedText>
+
+              <ThemedText style={[styles.modalSubtitle, isDarkMode && styles.darkSubText]}>
+                {selectedSuggestion?.title ?? 'Suggestion'}
+              </ThemedText>
+
+              <TextInput
+                style={[
+                  styles.commentInput,
+                  isDarkMode && styles.darkInput,
+                  isDarkMode && styles.darkText,
+                ]}
+                placeholder="Type your comment here..."
+                placeholderTextColor={isDarkMode ? '#9CA3AF' : '#6B7280'}
+                value={commentText}
+                onChangeText={setCommentText}
+                multiline
+                textAlignVertical="top"
+              />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={closeCommentModal}
+                  activeOpacity={0.8}
+                >
+                  <ThemedText style={styles.cancelBtnText}>Cancel</ThemedText>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.submitBtn,
+                    commentingId === selectedSuggestion?.id && styles.disabledBtn,
+                  ]}
+                  onPress={handleSubmitComment}
+                  activeOpacity={0.8}
+                  disabled={commentingId === selectedSuggestion?.id}
+                >
+                  {commentingId === selectedSuggestion?.id ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <ThemedText style={styles.submitBtnText}>Post Comment</ThemedText>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </ThemedView>
   );
@@ -258,6 +423,10 @@ function IdeaCard({
   status,
   category,
   statusStyle,
+  onLike,
+  onComment,
+  likeLoading,
+  commentLoading,
 }: any) {
   const { isDarkMode } = useTheme();
 
@@ -304,19 +473,33 @@ function IdeaCard({
 
       <View style={styles.cardFooter}>
         <View style={styles.stats}>
-          <View style={styles.statItem}>
-            <Ionicons name="thumbs-up-outline" size={20} color="#6B7280" />
+          <TouchableOpacity
+            style={styles.statItem}
+            onPress={onLike}
+            activeOpacity={0.7}
+            disabled={likeLoading}
+          >
+            {likeLoading ? (
+              <ActivityIndicator size="small" color="#2F70E9" />
+            ) : (
+              <Ionicons name="thumbs-up-outline" size={20} color="#2F70E9" />
+            )}
             <ThemedText style={[styles.statText, isDarkMode && styles.darkSubText]}>
               {likes}
             </ThemedText>
-          </View>
+          </TouchableOpacity>
 
-          <View style={styles.statItem}>
-            <Ionicons name="chatbubble-outline" size={20} color="#6B7280" />
+          <TouchableOpacity
+            style={styles.statItem}
+            onPress={onComment}
+            activeOpacity={0.7}
+            disabled={commentLoading}
+          >
+            <Ionicons name="chatbubble-outline" size={20} color="#2F70E9" />
             <ThemedText style={[styles.statText, isDarkMode && styles.darkSubText]}>
               {comments}
             </ThemedText>
-          </View>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity activeOpacity={0.7}>
@@ -362,6 +545,10 @@ const styles = StyleSheet.create({
   darkCard: { backgroundColor: '#1F2937', borderColor: '#374151' },
   darkText: { color: '#F9FAFB' },
   darkSubText: { color: '#9CA3AF' },
+  darkInput: {
+    backgroundColor: '#111827',
+    borderColor: '#374151',
+  },
 
   header: {
     flexDirection: 'row',
@@ -545,6 +732,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 10,
   },
   statText: {
     color: '#6B7280',
@@ -581,5 +771,72 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
     paddingBottom: 20,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 14,
+  },
+  commentInput: {
+    minHeight: 120,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#111827',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 14,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+  },
+  cancelBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: '#E5E7EB',
+  },
+  cancelBtnText: {
+    color: '#374151',
+    fontWeight: '700',
+  },
+  submitBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: '#2F70E9',
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  submitBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  disabledBtn: {
+    opacity: 0.7,
   },
 });

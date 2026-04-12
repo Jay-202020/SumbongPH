@@ -13,8 +13,15 @@ import {
 } from '@/services/reportService';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import React, { useEffect, useMemo, useState } from 'react';
+import {
+  collection,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  where,
+} from 'firebase/firestore';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -34,14 +41,28 @@ type UserProfile = {
   role?: string;
 };
 
+type NotificationItem = {
+  id: string;
+  title: string;
+  message: string;
+  type?: string;
+  read?: boolean;
+  reportId?: string;
+  createdAt?: any;
+  userId?: string;
+};
+
 export default function HomeDashboard() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
 
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingReports, setLoadingReports] = useState(true);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
+
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [reports, setReports] = useState<ReportItem[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -103,9 +124,63 @@ export default function HomeDashboard() {
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+      setNotifications([]);
+      setLoadingNotifications(false);
+      return;
+    }
+
+    const notificationsRef = collection(db, 'notifications');
+    const notificationsQuery = query(
+      notificationsRef,
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(
+      notificationsQuery,
+      (snapshot) => {
+        const allNotifications: NotificationItem[] = snapshot.docs
+          .map((docSnap) => {
+            const data = docSnap.data();
+
+            return {
+              id: docSnap.id,
+              title: data.title || 'Notification',
+              message: data.message || '',
+              type: data.type || 'general',
+              read: data.read || false,
+              reportId: data.reportId || '',
+              createdAt: data.createdAt || null,
+              userId: data.userId || '',
+            };
+          })
+          .filter((item) => {
+            return item.userId === currentUser.uid || item.userId === 'all';
+          });
+
+        setNotifications(allNotifications);
+        setLoadingNotifications(false);
+      },
+      (error) => {
+        console.log('HOME NOTIFICATIONS ERROR:', error);
+        setNotifications([]);
+        setLoadingNotifications(false);
+      }
+    );
+
+    return unsubscribe;
+  }, []);
+
   const pendingCount = useMemo(() => getPendingReportsCount(reports), [reports]);
   const resolvedCount = useMemo(() => getResolvedReportsCount(reports), [reports]);
   const recentReports = useMemo(() => getRecentReports(reports, 3), [reports]);
+
+  const unreadNotificationsCount = useMemo(() => {
+    return notifications.filter((item) => !item.read).length;
+  }, [notifications]);
 
   const getInitials = (name?: string) => {
     if (!name) return 'U';
@@ -119,7 +194,7 @@ export default function HomeDashboard() {
     return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
   };
 
-  if (loadingProfile || loadingReports) {
+  if (loadingProfile || loadingReports || loadingNotifications) {
     return (
       <ThemedView style={[styles.loadingContainer, isDarkMode && styles.darkContainer]}>
         <ActivityIndicator size="large" color="#2F70E9" />
@@ -150,14 +225,24 @@ export default function HomeDashboard() {
             </View>
 
             <View style={styles.headerRight}>
-              <View style={styles.notificationWrap}>
+              <TouchableOpacity
+                style={styles.notificationWrap}
+                onPress={() => router.push('/notifications' as any)}
+                activeOpacity={0.7}
+              >
                 <Ionicons
                   name="notifications-outline"
                   size={26}
                   color={isDarkMode ? '#F9FAFB' : '#4B5563'}
                 />
-                <View style={styles.badgeDot} />
-              </View>
+                {unreadNotificationsCount > 0 && (
+                  <View style={styles.badgeWrap}>
+                    <ThemedText style={styles.badgeText}>
+                      {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                    </ThemedText>
+                  </View>
+                )}
+              </TouchableOpacity>
 
               <View style={styles.avatar}>
                 <ThemedText style={styles.avatarText}>{getInitials(userProfile?.name)}</ThemedText>
@@ -193,17 +278,6 @@ export default function HomeDashboard() {
                 {resolvedCount}
               </ThemedText>
             </View>
-          </View>
-
-          <View style={styles.alertBanner}>
-            <View style={styles.alertHeader}>
-              <Ionicons name="warning-outline" size={18} color="#FFFFFF" />
-              <ThemedText style={styles.alertLabel}>Community Alert</ThemedText>
-            </View>
-            <ThemedText style={styles.alertTitle}>Heavy Rainfall Warning</ThemedText>
-            <ThemedText style={styles.alertDescription}>
-              Orange rainfall warning raised in Metro Manila. Expect flooding in low-lying areas.
-            </ThemedText>
           </View>
 
           <View style={styles.sectionHeader}>
@@ -408,15 +482,27 @@ const styles = StyleSheet.create({
   },
   notificationWrap: {
     position: 'relative',
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  badgeDot: {
+  badgeWrap: {
     position: 'absolute',
-    top: 1,
-    right: 1,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: -2,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
   },
   avatar: {
     width: 42,
@@ -434,7 +520,7 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     gap: 14,
-    marginBottom: 18,
+    marginBottom: 22,
   },
   statCard: {
     flex: 1,
@@ -466,35 +552,6 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginTop: 12,
   },
-  alertBanner: {
-    backgroundColor: '#F97316',
-    borderRadius: 22,
-    padding: 18,
-    marginBottom: 22,
-  },
-  alertHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
-  alertLabel: {
-    fontSize: 13,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  alertTitle: {
-    fontSize: 22,
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-  alertDescription: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    marginTop: 8,
-    lineHeight: 20,
-    opacity: 0.95,
-  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -523,6 +580,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     padding: 20,
     alignItems: 'center',
+    marginBottom: 22,
   },
   emptyTitle: {
     marginTop: 12,

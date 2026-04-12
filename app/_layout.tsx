@@ -1,6 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider as NavigationProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider, useTheme } from './ThemeContext';
 
 function RootLayoutContent() {
@@ -17,6 +18,7 @@ function RootLayoutContent() {
         <Stack.Screen name="(ideas_dashboard)" options={{ headerShown: false }} />
         <Stack.Screen name="(category.dashboard)" options={{ headerShown: false }} />
         <Stack.Screen name="(admin.dashboard)" options={{ headerShown: false }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false }} />
         <Stack.Screen name="profile" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         <Stack.Screen name="edit-report" options={{ presentation: 'modal', title: 'Edit Report' }} />
@@ -32,7 +34,9 @@ function RootLayoutContent() {
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <RootLayoutContent />
+      <NotificationProvider>
+        <RootLayoutContent />
+      </NotificationProvider>
     </ThemeProvider>
   );
 }
