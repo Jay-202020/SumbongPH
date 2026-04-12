@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { auth, db } from '@/firebaseConfig';
+import { navigateToMapsByRole } from '@/services/roleNavigation';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
@@ -86,7 +87,7 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      router.replace('/login');
+      router.replace('/(login)/login');
     } catch (error) {
       Alert.alert('Error', 'Unable to log out right now.');
     }
@@ -105,10 +106,7 @@ export default function ProfileScreen() {
       return parts[0].charAt(0).toUpperCase();
     }
 
-    return (
-      parts[0].charAt(0).toUpperCase() +
-      parts[1].charAt(0).toUpperCase()
-    );
+    return parts[0].charAt(0).toUpperCase() + parts[1].charAt(0).toUpperCase();
   };
 
   if (loadingProfile) {
@@ -265,7 +263,7 @@ export default function ProfileScreen() {
           <TabIcon
             icon="map-outline"
             label="Maps"
-            onPress={() => router.push('/(maps.dashboard)/maps.dashboard')}
+            onPress={() => navigateToMapsByRole(router)}
             activeColor={isDarkMode ? '#60A5FA' : '#2F70E9'}
           />
           <TabIcon
@@ -365,7 +363,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
   },
-  logoutText: { color: 'white', fontSize: 16, fontWeight: '700' },
   tabBar: {
     position: 'absolute',
     bottom: 0,

@@ -1,4 +1,6 @@
 import { auth, db } from '@/firebaseConfig';
+import { auth } from '@/firebaseConfig';
+import { getCurrentUserRole, getHomeRouteByRole } from '@/services/roleNavigation';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -68,8 +70,10 @@ export default function LoginScreen() {
         return;
       }
 
+      const role = await getCurrentUserRole();
+
       Alert.alert('Success', 'Logged in successfully.');
-      router.replace('/(home_dasborad)/home.dashboard');
+      router.replace(getHomeRouteByRole(role));
     } catch (error: any) {
       console.log('LOGIN ERROR:', error);
 

@@ -1,148 +1,437 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ReportItem } from '@/models/report';
+import {
+  fetchReports,
+  formatReportDate,
+  getCategoryIcon,
+  getPendingReportsCount,
+  getResolvedReportsCount,
+  getStatusStyle,
+} from '@/services/reportService';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
-import { SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useTheme } from '../ThemeContext';
 
 export default function ReportsDashboard() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
 
+  const [reports, setReports] = useState<ReportItem[]>([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadReports = useCallback(async (useRefresh = false) => {
+    try {
+      if (useRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      const data = await fetchReports();
+      setReports(data);
+    } catch (error) {
+      console.log('REPORTS DASHBOARD LOAD ERROR:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadReports();
+    }, [loadReports])
+  );
+
+  const filteredReports = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
+    if (!q) {
+      return reports;
+    }
+
+    return reports.filter((item) => {
+      return (
+        item.title.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q) ||
+        item.location.toLowerCase().includes(q) ||
+        item.reportCode.toLowerCase().includes(q) ||
+        item.status.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q)
+      );
+    });
+  }, [reports, search]);
+
+  const pendingCount = useMemo(() => getPendingReportsCount(reports), [reports]);
+  const resolvedCount = useMemo(() => getResolvedReportsCount(reports), [reports]);
+
+  if (loading) {
+    return (
+      <ThemedView style={[styles.loadingContainer, isDarkMode && styles.darkContainer]}>
+        <ActivityIndicator size="large" color="#2F70E9" />
+        <ThemedText style={[styles.loadingText, isDarkMode && styles.darkSubText]}>
+          Loading your reports...
+        </ThemedText>
+      </ThemedView>
+    );
+  }
+
   return (
     <ThemedView style={[styles.container, isDarkMode && styles.darkContainer]}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={styles.content}>
-          <ThemedText style={[styles.pageTitle, isDarkMode && styles.darkText]}>My Reports</ThemedText>
-
-          <View style={styles.searchRow}>
-            <View style={[styles.searchBar, isDarkMode && styles.darkCard]}>
-              <Ionicons name="search-outline" size={20} color="#9CA3AF" />
-              <TextInput 
-                placeholder="Search reports..." 
-                placeholderTextColor="#9CA3AF"
-                style={[styles.searchInput, isDarkMode && styles.darkText]} 
-              />
-            </View>
-            <TouchableOpacity style={[styles.filterButton, isDarkMode && styles.darkCard]}>
-              <Ionicons name="filter-outline" size={22} color="#4B5563" />
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadReports(true)} />}
+        >
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.8}>
+              <Ionicons name="arrow-back" size={22} color={isDarkMode ? '#F9FAFB' : '#111827'} />
             </TouchableOpacity>
+
+            <View style={styles.headerTextWrap}>
+              <ThemedText style={[styles.headerTitle, isDarkMode && styles.darkText]}>
+                Reports Dashboard
+              </ThemedText>
+              <ThemedText style={[styles.headerSubTitle, isDarkMode && styles.darkSubText]}>
+                This page keeps all of your reports, even old or resolved ones.
+              </ThemedText>
+            </View>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-             <ReportCard 
-                title="Uncollected Garbage at" 
-                status="RECEIVED" 
-                id="SMP2025121701" 
-                desc="Garbage has been piling up for 3 days. Smell is getting bad."
-                location="123 Main St, Brgy San"
-                date="12/17/2023"
-                icon="trash-outline"
-             />
-             <ReportCard 
-                title="Broken Streetlight near" 
-                status="IN PROGRESS" 
-                id="SMP2025121605" 
-                desc="Dark area causing safety concerns for students walking home."
-                location="Rizal Ave corner Mabini St"
-                date="12/17/2023"
-                icon="bulb-outline"
-                statusBlue
-             />
-             <ReportCard 
-                title="Clogged Drainage" 
-                status="RESOLVED" 
-                id="SMP2025121502" 
-                desc="Knee-deep water after 1 hour of rain."
-                location="Purok 3, Interior Alley"
-                date="12/15/2023"
-                icon="water-outline"
-                statusGreen
-             />
-          </ScrollView>
-        </View>
+          <View style={styles.summaryRow}>
+            <View style={[styles.summaryCard, isDarkMode && styles.darkCard]}>
+              <ThemedText style={[styles.summaryLabel, isDarkMode && styles.darkSubText]}>
+                Total
+              </ThemedText>
+              <ThemedText style={[styles.summaryValue, isDarkMode && styles.darkText]}>
+                {reports.length}
+              </ThemedText>
+            </View>
 
-        {/* Updated FAB with Navigation */}
-        <TouchableOpacity 
-          style={styles.fab} 
-          activeOpacity={0.8}
-          onPress={() => router.push('/category.dashboard')}
-        >
-          <Ionicons name="add" size={32} color="white" />
-        </TouchableOpacity>
+            <View style={[styles.summaryCard, isDarkMode && styles.darkCard]}>
+              <ThemedText style={[styles.summaryLabel, isDarkMode && styles.darkSubText]}>
+                Pending
+              </ThemedText>
+              <ThemedText style={[styles.summaryValue, isDarkMode && styles.darkText]}>
+                {pendingCount}
+              </ThemedText>
+            </View>
 
-        <View style={[styles.tabBar, isDarkMode && styles.darkCard]}>
-          <TabIcon icon="home-outline" label="Home" onPress={() => router.push('/(home_dasborad)/home.dashboard')} />
-          <TabIcon icon="document-text" label="Reports" active onPress={() => router.push('/(reports_dashboard)/reports.dashboard')} />
-          <TabIcon icon="map-outline" label="Maps" onPress={() => router.push('/(maps.dashboard)/maps.dashboard')} />
-          <TabIcon icon="bulb-outline" label="Ideas" onPress={() => router.push('/(ideas_dashboard)/ideas_dashboard')} />
-          <TabIcon icon="person-outline" label="Profile" onPress={() => router.push('/profile')} />
-        </View>
+            <View style={[styles.summaryCard, isDarkMode && styles.darkCard]}>
+              <ThemedText style={[styles.summaryLabel, isDarkMode && styles.darkSubText]}>
+                Resolved
+              </ThemedText>
+              <ThemedText style={[styles.summaryValue, isDarkMode && styles.darkText]}>
+                {resolvedCount}
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={[styles.searchBox, isDarkMode && styles.darkInput]}>
+            <Ionicons name="search-outline" size={20} color="#9CA3AF" />
+            <TextInput
+              style={[styles.searchInput, isDarkMode && styles.darkText]}
+              placeholder="Search title, category, status, location, or code"
+              placeholderTextColor="#9CA3AF"
+              value={search}
+              onChangeText={setSearch}
+            />
+          </View>
+
+          {filteredReports.length === 0 ? (
+            <View style={[styles.emptyCard, isDarkMode && styles.darkCard]}>
+              <Ionicons name="folder-open-outline" size={28} color="#9CA3AF" />
+              <ThemedText style={[styles.emptyTitle, isDarkMode && styles.darkText]}>
+                No reports found
+              </ThemedText>
+              <ThemedText style={[styles.emptyText, isDarkMode && styles.darkSubText]}>
+                Try another search term or create a new report.
+              </ThemedText>
+            </View>
+          ) : (
+            filteredReports.map((report) => <ReportCard key={report.id} report={report} />)
+          )}
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
 }
 
-// ... ReportCard and TabIcon components remain the same as your original file
-
-function ReportCard({ title, status, id, desc, location, date, icon, statusBlue, statusGreen }: any) {
+function ReportCard({ report }: { report: ReportItem }) {
   const { isDarkMode } = useTheme();
+  const statusStyle = getStatusStyle(report.status);
 
   return (
     <View style={[styles.reportCard, isDarkMode && styles.darkCard]}>
-       <View style={styles.reportRow}>
-          <View style={styles.iconBg}><Ionicons name={icon} size={22} color="#4B5563" /></View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <ThemedText style={[styles.reportMainTitle, isDarkMode && styles.darkText]}>{title}</ThemedText>
-            <ThemedText style={[styles.reportId, isDarkMode && styles.darkSubText]}>ID: {id}</ThemedText>
+      <View style={styles.reportTopRow}>
+        <View style={styles.reportMainRow}>
+          <View style={styles.reportIconWrap}>
+            <Ionicons name={getCategoryIcon(report.category) as any} size={22} color="#4B5563" />
           </View>
-          <View style={[styles.statusBadge, statusBlue && {backgroundColor: '#DBEAFE'}, statusGreen && {backgroundColor: '#DCFCE7'}]}>
-            <ThemedText style={[styles.statusText, statusBlue && {color: '#2563EB'}, statusGreen && {color: '#16A34A'}]}>{status}</ThemedText>
+
+          <View style={styles.reportInfo}>
+            <ThemedText style={[styles.reportTitle, isDarkMode && styles.darkText]} numberOfLines={1}>
+              {report.title}
+            </ThemedText>
+            <ThemedText style={[styles.reportCode, isDarkMode && styles.darkSubText]}>
+              {report.reportCode}
+            </ThemedText>
           </View>
-       </View>
-       <ThemedText style={[styles.reportSnippet, isDarkMode && styles.darkSubText]}>{desc}</ThemedText>
-       <View style={styles.reportFooter}>
-         <View style={styles.footerInfo}><Ionicons name="location-outline" size={14} color="#9CA3AF" /><ThemedText style={[styles.footerLabel, isDarkMode && styles.darkSubText]}>{location}</ThemedText></View>
-         <View style={styles.footerInfo}><Ionicons name="time-outline" size={14} color="#9CA3AF" /><ThemedText style={[styles.footerLabel, isDarkMode && styles.darkSubText]}>{date}</ThemedText></View>
-       </View>
+        </View>
+
+        <View style={[styles.statusBadge, { backgroundColor: statusStyle.backgroundColor }]}>
+          <ThemedText style={[styles.statusText, { color: statusStyle.color }]}>
+            {statusStyle.label}
+          </ThemedText>
+        </View>
+      </View>
+
+      <ThemedText style={[styles.reportDescription, isDarkMode && styles.darkSubText]} numberOfLines={3}>
+        {report.description}
+      </ThemedText>
+
+      <View style={styles.metaGrid}>
+        <MetaItem icon="grid-outline" label={report.category} isDarkMode={isDarkMode} />
+        <MetaItem icon="location-outline" label={report.location} isDarkMode={isDarkMode} />
+        <MetaItem icon="flash-outline" label={report.urgency} isDarkMode={isDarkMode} />
+        <MetaItem icon="calendar-outline" label={formatReportDate(report)} isDarkMode={isDarkMode} />
+      </View>
     </View>
   );
 }
 
-function TabIcon({ icon, label, active, onPress }: any) {
+function MetaItem({
+  icon,
+  label,
+  isDarkMode,
+}: {
+  icon: any;
+  label: string;
+  isDarkMode: boolean;
+}) {
   return (
-    <TouchableOpacity style={{ alignItems: 'center' }} onPress={onPress} activeOpacity={0.6}>
-      <Ionicons name={icon} size={24} color={active ? '#2F70E9' : '#9CA3AF'} />
-      <ThemedText style={{ fontSize: 10, color: active ? '#2F70E9' : '#9CA3AF', marginTop: 4, fontWeight: '600' }}>{label}</ThemedText>
-    </TouchableOpacity>
+    <View style={styles.metaItem}>
+      <Ionicons name={icon} size={14} color="#9CA3AF" />
+      <ThemedText style={[styles.metaText, isDarkMode && styles.darkSubText]} numberOfLines={1}>
+        {label}
+      </ThemedText>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  darkContainer: { backgroundColor: '#111827' },
-  darkCard: { backgroundColor: '#1F2937', borderColor: '#374151' },
-  darkText: { color: '#F9FAFB' },
-  darkSubText: { color: '#9CA3AF' },
-  content: { paddingHorizontal: 20, flex: 1 },
-  pageTitle: { fontSize: 24, fontWeight: '800', color: '#111827', marginTop: 20, marginBottom: 15 },
-  searchRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', paddingHorizontal: 15, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' },
-  searchInput: { flex: 1, paddingVertical: 12, marginLeft: 10, fontSize: 16, color: '#111827' },
-  filterButton: { padding: 12, backgroundColor: '#F9FAFB', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', justifyContent: 'center' },
-  reportCard: { backgroundColor: 'white', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#F3F4F6', marginBottom: 15, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5 },
-  reportRow: { flexDirection: 'row', alignItems: 'center' },
-  iconBg: { backgroundColor: '#F9FAFB', padding: 12, borderRadius: 14 },
-  reportMainTitle: { fontWeight: '700', fontSize: 15, color: '#111827' },
-  reportId: { color: '#9CA3AF', fontSize: 12, marginTop: 2 },
-  statusBadge: { backgroundColor: '#F3F4F6', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12 },
-  statusText: { fontSize: 10, fontWeight: '800', color: '#6B7280' },
-  reportSnippet: { color: '#4B5563', fontSize: 14, lineHeight: 20, marginVertical: 12 },
-  reportFooter: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 12 },
-  footerInfo: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  footerLabel: { fontSize: 12, color: '#9CA3AF' },
-  tabBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, backgroundColor: 'white', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingBottom: 15 },
-  fab: { position: 'absolute', bottom: 100, right: 20, backgroundColor: '#2F70E9', width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: '#2F70E9', shadowOpacity: 0.4, shadowRadius: 8, zIndex: 10 },
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  darkContainer: {
+    backgroundColor: '#111827',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  darkCard: {
+    backgroundColor: '#1F2937',
+    borderColor: '#374151',
+  },
+  darkInput: {
+    backgroundColor: '#1F2937',
+    borderColor: '#374151',
+  },
+  darkText: {
+    color: '#F9FAFB',
+  },
+  darkSubText: {
+    color: '#9CA3AF',
+  },
+  safeArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 30,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+    marginBottom: 20,
+  },
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#2F70E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrap: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  headerSubTitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 19,
+    marginTop: 6,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 18,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 18,
+    padding: 14,
+  },
+  summaryLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  summaryValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111827',
+    marginTop: 8,
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 18,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111827',
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 18,
+    padding: 24,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    marginTop: 12,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  emptyText: {
+    marginTop: 8,
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  reportCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
+  },
+  reportTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  reportMainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  reportIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reportInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  reportTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  reportCode: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  statusBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  reportDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
+    marginTop: 14,
+  },
+  metaGrid: {
+    marginTop: 14,
+    gap: 8,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  metaText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#6B7280',
+  },
 });

@@ -2,14 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useWindowDimensions,
-    View
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from 'react-native';
 
 const UsersDashboard = () => {
@@ -29,11 +29,10 @@ const UsersDashboard = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
-      <ScrollView 
-        style={styles.container} 
+      <ScrollView
+        style={styles.container}
         contentContainerStyle={isDesktop ? styles.desktopPadding : styles.mobilePadding}
       >
-        {/* --- NAVBAR --- */}
         <View style={styles.navBar}>
           <Text style={styles.logo}>SumbongPH</Text>
           {isDesktop && (
@@ -41,22 +40,25 @@ const UsersDashboard = () => {
               <TouchableOpacity onPress={() => router.push('/(admin.dashboard)/admin.dashboard')}>
                 <Text style={styles.navItem}>Overview</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push('/complaints.dashboard')}>
+
+              <TouchableOpacity onPress={() => router.push('/(admin.dashboard)/complaints.dashboard')}>
                 <Text style={styles.navItem}>Complaints</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push('/maps.dashboard')}>
+
+              <TouchableOpacity onPress={() => router.push('/(admin.dashboard)/maps.dashboard')}>
                 <Text style={styles.navItem}>Map</Text>
               </TouchableOpacity>
+
               <View style={styles.activeTabWrapper}>
                 <Text style={styles.activeNavItem}>Users</Text>
               </View>
+
               <Text style={styles.navItem}>Reports</Text>
             </View>
           )}
           <Text style={styles.userName}>Kap. Roberto Santos</Text>
         </View>
 
-        {/* --- HEADER --- */}
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.mainTitle}>User Management</Text>
@@ -68,28 +70,31 @@ const UsersDashboard = () => {
           </TouchableOpacity>
         </View>
 
-        {/* --- CONTROLS BAR --- */}
         <View style={styles.controlsBar}>
           <View style={styles.segmentedControl}>
-            <TouchableOpacity 
-              style={[styles.segment, activeTab === 'Staff' && styles.segmentActive]} 
+            <TouchableOpacity
+              style={[styles.segment, activeTab === 'Staff' && styles.segmentActive]}
               onPress={() => setActiveTab('Staff')}
             >
-              <Text style={[styles.segmentText, activeTab === 'Staff' && styles.segmentTextActive]}>Staff Accounts</Text>
+              <Text style={[styles.segmentText, activeTab === 'Staff' && styles.segmentTextActive]}>
+                Staff Accounts
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.segment, activeTab === 'Resident' && styles.segmentActive]} 
+            <TouchableOpacity
+              style={[styles.segment, activeTab === 'Resident' && styles.segmentActive]}
               onPress={() => setActiveTab('Resident')}
             >
-              <Text style={[styles.segmentText, activeTab === 'Resident' && styles.segmentTextActive]}>Resident Accounts</Text>
+              <Text style={[styles.segmentText, activeTab === 'Resident' && styles.segmentTextActive]}>
+                Resident Accounts
+              </Text>
             </TouchableOpacity>
           </View>
+
           <View style={styles.searchContainer}>
             <TextInput style={styles.searchInput} placeholder="Search staff..." />
           </View>
         </View>
 
-        {/* --- TABLE --- */}
         <View style={styles.tableCard}>
           <View style={styles.tableHeader}>
             <Text style={[styles.columnLabel, { flex: 2 }]}>Name & Email</Text>
@@ -111,15 +116,17 @@ const UsersDashboard = () => {
                   <Text style={styles.rowEmail}>{user.email}</Text>
                 </View>
               </View>
-              
+
               <View style={styles.cell}>
                 <View style={[styles.roleBadge, { backgroundColor: user.role === 'Admin' ? '#F3E8FF' : '#DBEAFE' }]}>
-                  <Text style={[styles.roleText, { color: user.role === 'Admin' ? '#7E22CE' : '#1E40AF' }]}>{user.role}</Text>
+                  <Text style={[styles.roleText, { color: user.role === 'Admin' ? '#7E22CE' : '#1E40AF' }]}>
+                    {user.role}
+                  </Text>
                 </View>
               </View>
 
               <Text style={styles.rowText}>{user.dept}</Text>
-              
+
               <View style={styles.cell}>
                 <View style={styles.statusBadge}>
                   <Text style={styles.statusText}>{user.status}</Text>
@@ -127,7 +134,7 @@ const UsersDashboard = () => {
               </View>
 
               <Text style={styles.rowText}>{user.login}</Text>
-              
+
               <TouchableOpacity style={styles.moreBtn}>
                 <Ionicons name="ellipsis-vertical" size={18} color="#AAA" />
               </TouchableOpacity>
@@ -154,7 +161,15 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 },
   mainTitle: { fontSize: 28, fontWeight: '800' },
   subtitle: { fontSize: 14, color: '#6B7280', marginTop: 4 },
-  addBtn: { backgroundColor: '#FF9F00', flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, alignItems: 'center', gap: 8 },
+  addBtn: {
+    backgroundColor: '#FF9F00',
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    gap: 8,
+  },
   addBtnText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
   controlsBar: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, alignItems: 'center' },
   segmentedControl: { flexDirection: 'row', backgroundColor: '#F3F4F6', padding: 4, borderRadius: 10 },
@@ -179,7 +194,7 @@ const styles = StyleSheet.create({
   roleText: { fontSize: 10, fontWeight: '700' },
   statusBadge: { alignSelf: 'flex-start', backgroundColor: '#DCFCE7', paddingHorizontal: 10, paddingVertical: 2, borderRadius: 12 },
   statusText: { fontSize: 10, fontWeight: '700', color: '#166534' },
-  moreBtn: { width: 30, alignItems: 'center' }
+  moreBtn: { width: 30, alignItems: 'center' },
 });
 
 export default UsersDashboard;
