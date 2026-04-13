@@ -43,7 +43,6 @@ export default function AdminIdeasDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
-  // State for Filters
   const [sortBy, setSortBy] = useState<'Latest' | 'Trending'>('Latest');
   const [statusFilter, setStatusFilter] = useState<'pending' | 'approved'>('pending');
 
@@ -80,7 +79,6 @@ export default function AdminIdeasDashboard() {
 
         setAdminName(adminData.name || 'Admin');
       } catch (error) {
-        console.log('ADMIN ACCESS ERROR:', error);
         router.replace('/(login)/login');
       } finally {
         setCheckingAccess(false);
@@ -97,7 +95,7 @@ export default function AdminIdeasDashboard() {
       const data = await fetchSuggestions();
       setSuggestions(data);
     } catch (error) {
-      console.error('ADMIN FETCH ERROR:', error);
+      console.error('Fetch error:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -110,15 +108,10 @@ export default function AdminIdeasDashboard() {
     }, [isMounted])
   );
 
-  // Logic for Approval Filter and Sorting
   const processedData = useMemo(() => {
-    let result = suggestions.filter(item => {
-      if (statusFilter === 'approved') {
-        return item.status === 'approved';
-      } else {
-        return item.status !== 'approved'; // Includes 'pending' or undefined
-      }
-    });
+    let result = suggestions.filter(item => 
+        statusFilter === 'approved' ? item.status === 'approved' : item.status !== 'approved'
+    );
 
     if (sortBy === 'Latest') {
       result.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
@@ -138,20 +131,10 @@ export default function AdminIdeasDashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.replace('/(login)/login');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to log out.');
-    }
-  };
-
   if (!isMounted || checkingAccess) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FF6B00" />
-        <Text style={styles.loadingText}>Checking admin access...</Text>
       </SafeAreaView>
     );
   }
@@ -160,29 +143,18 @@ export default function AdminIdeasDashboard() {
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      {/* Navigation Bar */}
       <View style={styles.navBar}>
         <Text style={styles.logo}>SumbongPH</Text>
         {isDesktop && (
           <View style={styles.navLinks}>
-            <TouchableOpacity onPress={() => router.push('/(admin.dashboard)/admin.dashboard')}>
-              <Text style={styles.navItem}>Overview</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/(admin.dashboard)/complaints.dashboard')}>
-              <Text style={styles.navItem}>Complaints</Text>
-            </TouchableOpacity>
-            <View style={styles.activeTabWrapper}>
-              <Text style={styles.activeNavItem}>Ideas</Text>
-            </View>
-            <TouchableOpacity onPress={() => router.push('/(admin.dashboard)/maps.dashboard')}>
-              <Text style={styles.navItem}>Map</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/(admin.dashboard)/users.dashboard')}>
-              <Text style={styles.navItem}>Users</Text>
-            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(admin.dashboard)/admin.dashboard')}><Text style={styles.navItem}>Overview</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(admin.dashboard)/complaints.dashboard')}><Text style={styles.navItem}>Complaints</Text></TouchableOpacity>
+            <View style={styles.activeTabWrapper}><Text style={styles.activeNavItem}>Ideas</Text></View>
+            <TouchableOpacity onPress={() => router.push('/(admin.dashboard)/maps.dashboard')}><Text style={styles.navItem}>Map</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(admin.dashboard)/users.dashboard')}><Text style={styles.navItem}>Users</Text></TouchableOpacity>
           </View>
         )}
-        <TouchableOpacity onPress={handleLogout}>
+        <TouchableOpacity onPress={() => signOut(auth).then(() => router.replace('/(login)/login'))}>
           <Text style={styles.userName}>Logout • {adminName}</Text>
         </TouchableOpacity>
       </View>
@@ -195,21 +167,19 @@ export default function AdminIdeasDashboard() {
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.mainTitle}>Community Ideas</Text>
-            <Text style={styles.subtitle}>Reviewing suggestions for geospatial improvements.</Text>
+            <Text style={styles.subtitle}>Moderate and reply to community suggestions.</Text>
           </View>
           
           <View style={styles.controlsRow}>
-            {/* Status Tabs */}
-            <View style={styles.tabContainer}>
-              <TouchableOpacity onPress={() => setStatusFilter('pending')} style={[styles.tabBtn, statusFilter === 'pending' && styles.tabBtnActive]}>
-                <Text style={[styles.tabBtnText, statusFilter === 'pending' && styles.tabBtnTextActive]}>In Review</Text>
+            <View style={styles.filterContainer}>
+              <TouchableOpacity onPress={() => setStatusFilter('pending')} style={[styles.filterBtn, statusFilter === 'pending' && styles.filterBtnActive]}>
+                <Text style={[styles.sortBtnText, statusFilter === 'pending' && { color: '#FFF' }]}>In Review</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setStatusFilter('approved')} style={[styles.tabBtn, statusFilter === 'approved' && styles.tabBtnActive]}>
-                <Text style={[styles.tabBtnText, statusFilter === 'approved' && styles.tabBtnTextActive]}>Approved</Text>
+              <TouchableOpacity onPress={() => setStatusFilter('approved')} style={[styles.filterBtn, statusFilter === 'approved' && styles.filterBtnActive]}>
+                <Text style={[styles.sortBtnText, statusFilter === 'approved' && { color: '#FFF' }]}>Approved</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Sort Filter */}
             <View style={styles.sortContainer}>
               <TouchableOpacity onPress={() => setSortBy('Latest')} style={[styles.sortBtn, sortBy === 'Latest' && styles.sortBtnActive]}>
                 <Text style={[styles.sortBtnText, sortBy === 'Latest' && styles.sortBtnTextActive]}>Latest</Text>
@@ -230,8 +200,8 @@ export default function AdminIdeasDashboard() {
                 key={item.id} 
                 item={item} 
                 isDesktop={isDesktop} 
-                onUpdateStatus={handleUpdateStatus}
-                adminName={adminName}
+                onUpdateStatus={handleUpdateStatus} 
+                adminName={adminName} 
               />
             ))
           )}
@@ -241,7 +211,6 @@ export default function AdminIdeasDashboard() {
   );
 }
 
-// Sub-Component with working Comment/Reply System
 const AdminIdeaCard = ({ item, isDesktop, onUpdateStatus, adminName }: any) => {
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
@@ -257,7 +226,7 @@ const AdminIdeaCard = ({ item, isDesktop, onUpdateStatus, adminName }: any) => {
     return () => unsubscribe();
   }, [showComments, item.id]);
 
-  const handlePostComment = async () => {
+  const handlePost = async () => {
     if (!inputText.trim()) return;
     try {
       await addDoc(collection(db, 'suggestions', item.id, 'comments'), {
@@ -269,7 +238,7 @@ const AdminIdeaCard = ({ item, isDesktop, onUpdateStatus, adminName }: any) => {
       setInputText('');
       setReplyTo(null);
     } catch (e) {
-      Alert.alert('Error', 'Failed to send reply');
+      Alert.alert('Error', 'Reply failed');
     }
   };
 
@@ -287,19 +256,18 @@ const AdminIdeaCard = ({ item, isDesktop, onUpdateStatus, adminName }: any) => {
       <Text style={styles.cardTitle}>{item.title}</Text>
       <Text style={styles.cardDescription} numberOfLines={showComments ? undefined : 3}>{item.description}</Text>
 
-      {/* Admin Quick Actions */}
       <View style={styles.adminActionRow}>
         <TouchableOpacity 
             style={item.status === 'approved' ? styles.reviewBtn : styles.approveBtn} 
             onPress={() => onUpdateStatus(item.id, item.status === 'approved' ? 'pending' : 'approved')}
         >
             <Text style={item.status === 'approved' ? styles.reviewBtnText : styles.approveBtnText}>
-                {item.status === 'approved' ? 'Move to Review' : 'Approve Post'}
+                {item.status === 'approved' ? 'Revoke' : 'Approve'}
             </Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.commentToggle} onPress={() => setShowComments(!showComments)}>
-            <Ionicons name="chatbubble-outline" size={18} color="#4B5563" />
+            <Ionicons name="chatbubble-outline" size={16} color="#4B5563" />
             <Text style={styles.commentToggleText}>Comments</Text>
         </TouchableOpacity>
       </View>
@@ -309,7 +277,7 @@ const AdminIdeaCard = ({ item, isDesktop, onUpdateStatus, adminName }: any) => {
               {comments.map((c) => (
                   <View key={c.id} style={[styles.commentBubble, c.isAdmin && styles.adminBubble]}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={styles.commentAuthor}>{c.authorName} {c.isAdmin && '(Admin)'}</Text>
+                        <Text style={styles.commentAuthor}>{c.authorName} {c.isAdmin && '✓'}</Text>
                         {!c.isAdmin && (
                             <TouchableOpacity onPress={() => setReplyTo({ id: c.id, name: c.authorName })}>
                                 <Text style={styles.replyActionText}>Reply</Text>
@@ -328,11 +296,11 @@ const AdminIdeaCard = ({ item, isDesktop, onUpdateStatus, adminName }: any) => {
                 )}
                 <TextInput 
                   style={styles.replyInput} 
-                  placeholder="Post a reply..." 
+                  placeholder="Admin reply..." 
                   value={inputText} 
                   onChangeText={setInputText} 
                 />
-                <TouchableOpacity onPress={handlePostComment}><Ionicons name="send" size={20} color="#F97316" /></TouchableOpacity>
+                <TouchableOpacity onPress={handlePost}><Ionicons name="send" size={18} color="#F97316" /></TouchableOpacity>
               </View>
           </View>
       )}
@@ -343,57 +311,54 @@ const AdminIdeaCard = ({ item, isDesktop, onUpdateStatus, adminName }: any) => {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
   container: { flex: 1 },
-  desktopPadding: { paddingHorizontal: 60, paddingBottom: 40 },
-  mobilePadding: { paddingHorizontal: 16, paddingBottom: 20 },
-  loadingContainer: { flex: 1, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 12, fontSize: 14, color: '#666', fontWeight: '500' },
-  navBar: { height: 70, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', backgroundColor: 'white' },
-  logo: { fontSize: 22, fontWeight: '900', color: '#111827' },
-  navLinks: { flexDirection: 'row', gap: 24, alignItems: 'center' },
-  navItem: { fontSize: 13, color: '#9CA3AF', fontWeight: '500' },
-  activeTabWrapper: { borderBottomWidth: 2, borderBottomColor: '#F97316', paddingVertical: 24 },
-  activeNavItem: { fontSize: 14, fontWeight: '700', color: '#F97316' },
-  userName: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 32, marginBottom: 24, flexWrap: 'wrap', gap: 16 },
-  mainTitle: { fontSize: 28, fontWeight: '800', color: '#111827' },
-  subtitle: { fontSize: 14, color: '#6B7280', marginTop: 4 },
-  controlsRow: { flexDirection: 'row', gap: 12 },
-  tabContainer: { flexDirection: 'row', backgroundColor: '#F3F4F6', padding: 4, borderRadius: 10 },
-  tabBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  tabBtnActive: { backgroundColor: '#111827' },
-  tabBtnText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
-  tabBtnTextActive: { color: 'white' },
-  sortContainer: { flexDirection: 'row', backgroundColor: '#F3F4F6', padding: 4, borderRadius: 10 },
-  sortBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  sortBtnActive: { backgroundColor: 'white', elevation: 1 },
-  sortBtnText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
+  desktopPadding: { paddingHorizontal: 40, paddingVertical: 30 },
+  mobilePadding: { paddingHorizontal: 16, paddingVertical: 15 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  navBar: { height: 60, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  logo: { fontSize: 20, fontWeight: '900', color: '#111827' },
+  navLinks: { flexDirection: 'row', gap: 20 },
+  navItem: { fontSize: 13, color: '#9CA3AF' },
+  activeTabWrapper: { borderBottomWidth: 2, borderBottomColor: '#F97316', paddingVertical: 20 },
+  activeNavItem: { fontSize: 13, fontWeight: '700', color: '#F97316' },
+  userName: { fontSize: 12, fontWeight: '600' },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 },
+  mainTitle: { fontSize: 24, fontWeight: '800' },
+  subtitle: { fontSize: 13, color: '#6B7280' },
+  controlsRow: { flexDirection: 'row', gap: 10 },
+  filterContainer: { flexDirection: 'row', backgroundColor: '#F3F4F6', padding: 3, borderRadius: 8 },
+  filterBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
+  filterBtnActive: { backgroundColor: '#111827' },
+  sortContainer: { flexDirection: 'row', backgroundColor: '#F3F4F6', padding: 3, borderRadius: 8 },
+  sortBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
+  sortBtnActive: { backgroundColor: 'white' },
+  sortBtnText: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
   sortBtnTextActive: { color: '#111827' },
-  cardsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, marginTop: 10 },
-  card: { backgroundColor: 'white', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#E5E7EB' },
+  cardsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 15 },
+  card: { backgroundColor: 'white', borderRadius: 12, padding: 15, borderWidth: 1, borderColor: '#E5E7EB' },
   cardDesktop: { width: '31%' },
   cardMobile: { width: '100%' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  statusText: { fontSize: 10, fontWeight: '800' },
-  likesBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  likesText: { fontSize: 13, fontWeight: '700', color: '#374151' },
-  cardTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 8 },
-  cardDescription: { fontSize: 14, color: '#4B5563', lineHeight: 20, marginBottom: 16 },
-  adminActionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 16, marginBottom: 12 },
-  approveBtn: { backgroundColor: '#10B981', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  approveBtnText: { color: 'white', fontSize: 12, fontWeight: '700' },
-  reviewBtn: { backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  reviewBtnText: { color: '#4B5563', fontSize: 12, fontWeight: '700' },
-  commentToggle: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  commentToggleText: { fontSize: 13, fontWeight: '600', color: '#4B5563' },
-  commentSection: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 12, marginTop: 10 },
-  commentBubble: { backgroundColor: 'white', padding: 10, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  statusBadge: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 },
+  statusText: { fontSize: 9, fontWeight: '800' },
+  likesBadge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  likesText: { fontSize: 12, fontWeight: '700' },
+  cardTitle: { fontSize: 16, fontWeight: '800', marginBottom: 5 },
+  cardDescription: { fontSize: 13, color: '#4B5563', lineHeight: 18, marginBottom: 15 },
+  adminActionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 12 },
+  approveBtn: { backgroundColor: '#10B981', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 5 },
+  approveBtnText: { color: 'white', fontSize: 11, fontWeight: '700' },
+  reviewBtn: { backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 5 },
+  reviewBtnText: { color: '#4B5563', fontSize: 11, fontWeight: '700' },
+  commentToggle: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  commentToggleText: { fontSize: 12, fontWeight: '600' },
+  commentSection: { backgroundColor: '#F9FAFB', borderRadius: 10, padding: 10, marginTop: 10 },
+  commentBubble: { backgroundColor: 'white', padding: 8, borderRadius: 8, marginBottom: 5, borderWidth: 1, borderColor: '#E5E7EB' },
   adminBubble: { borderColor: '#F97316', backgroundColor: '#FFF7ED' },
-  commentAuthor: { fontSize: 11, fontWeight: '800', color: '#111827', marginBottom: 2 },
-  replyActionText: { fontSize: 11, color: '#F97316', fontWeight: '800' },
-  commentText: { fontSize: 13, color: '#374151', lineHeight: 18 },
-  replyInputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderRadius: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: '#E5E7EB', marginTop: 8 },
-  replyInput: { flex: 1, height: 40, fontSize: 13 },
-  replyChip: { backgroundColor: '#F3F4F6', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, marginRight: 8 },
-  replyChipText: { fontSize: 11, fontWeight: '700', color: '#6B7280' },
+  commentAuthor: { fontSize: 10, fontWeight: '700' },
+  replyActionText: { fontSize: 10, color: '#F97316', fontWeight: '800' },
+  commentText: { fontSize: 12, color: '#4B5563' },
+  replyInputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderRadius: 6, paddingHorizontal: 8, borderWidth: 1, borderColor: '#E5E7EB' },
+  replyInput: { flex: 1, height: 35, fontSize: 12 },
+  replyChip: { backgroundColor: '#E5E7EB', paddingHorizontal: 6, borderRadius: 4, marginRight: 5 },
+  replyChipText: { fontSize: 10, fontWeight: '700' },
 });
