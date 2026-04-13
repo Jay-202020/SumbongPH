@@ -330,6 +330,8 @@ export default function AnalyticsDashboard() {
                 <Text style={styles.navItem}>Complaints</Text>
               </TouchableOpacity>
 
+
+<TouchableOpacity onPress={() => router.push('/(admin.dashboard)/admin.ideas')}><Text style={styles.navItem}>Ideas</Text></TouchableOpacity>
               <TouchableOpacity
                 onPress={() => router.push('/(admin.dashboard)/maps.dashboard')}
               >

@@ -251,7 +251,7 @@ const MapDashboard = () => {
               <TouchableOpacity onPress={() => router.push('/complaints.dashboard')}>
                 <Text style={styles.navItem}>Complaints</Text>
               </TouchableOpacity>
-
+<TouchableOpacity onPress={() => router.push('/(admin.dashboard)/admin.ideas')}><Text style={styles.navItem}>Ideas</Text></TouchableOpacity>
               <View style={styles.activeTabWrapper}>
                 <Text style={styles.activeNavItem}>Map</Text>
               </View>
