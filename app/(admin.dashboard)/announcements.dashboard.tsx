@@ -13,7 +13,7 @@ import {
   Timestamp,
   updateDoc,
 } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react'; // Added useMemo for filtering
 import {
   ActivityIndicator,
   Alert,
@@ -63,9 +63,11 @@ export default function AdminAnnouncementsDashboard() {
   const [priority, setPriority] = useState<AnnouncementPriority>('normal');
   const [isPinned, setIsPinned] = useState(false);
 
-  // ✅ NEW
   const [scope, setScope] = useState<AnnouncementScope>('all');
   const [barangay, setBarangay] = useState('');
+
+  // ✅ NEW: Search state
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     setIsMounted(true);
@@ -155,6 +157,14 @@ export default function AdminAnnouncementsDashboard() {
 
     return () => unsubscribe();
   }, [isMounted]);
+
+  // ✅ NEW: Logic to filter announcements based on search
+  const filteredAnnouncements = useMemo(() => {
+    return announcements.filter((item) =>
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.message.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [announcements, searchQuery]);
 
   const resetForm = () => {
     setTitle('');
@@ -550,18 +560,29 @@ export default function AdminAnnouncementsDashboard() {
                 Manage what users see on their dashboard.
               </Text>
 
+              {/* ✅ NEW: Search Bar UI */}
+              <TextInput
+                style={[styles.input, { marginBottom: 15, backgroundColor: '#F9FAFB' }]}
+                placeholder="Search posted announcements..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholderTextColor="#9CA3AF"
+              />
+
               {loadingAnnouncements ? (
                 <View style={styles.centerState}>
                   <ActivityIndicator size="small" color="#F97316" />
                   <Text style={styles.stateText}>Loading announcements...</Text>
                 </View>
-              ) : announcements.length === 0 ? (
+              ) : filteredAnnouncements.length === 0 ? (
                 <View style={styles.centerState}>
-                  <Text style={styles.stateText}>No announcements yet.</Text>
+                  <Text style={styles.stateText}>
+                    {searchQuery ? "No matching results." : "No announcements yet."}
+                  </Text>
                 </View>
               ) : (
                 <View style={styles.listWrap}>
-                  {announcements.map((item) => {
+                  {filteredAnnouncements.map((item) => {
                     const priorityStyle = getPriorityStyle(item.priority);
 
                     return (
